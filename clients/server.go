@@ -4,20 +4,22 @@ import (
 	"context"
 	"errors"
 	client_proxy "github.com/ProjectAthenaa/sonic-core/protos/clientProxy"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/metadata"
 )
 
 type Server struct {
 	client_proxy.UnimplementedProxyServer
-	clients map[string]*Client
+	clients map[string]*client
 }
 
 func NewServer() *Server {
 	return &Server{
-		clients: make(map[string]*Client),
+		clients: make(map[string]*client),
 	}
 }
 
+//Do proxies the request received by an internal service to the appropriate client
 func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client_proxy.Response, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -31,12 +33,23 @@ func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client
 
 	userID := userIDArr[0]
 
+	//create unique task id to match request with response
+	request.TaskID = uuid.NewString() + request.URL
+
+	//check if client is connected
+	_, ok = s.clients[userID]
+	if !ok {
+		return nil, errors.New("client_not_connected")
+	}
+
+	//do request with the connected client
 	responses := s.clients[userID].doRequest(request)
 
 	var resp *client_proxy.Response
 
 	for {
 		select {
+		//listen to responses from the client
 		case resp = <-responses:
 			return resp, nil
 		case <-ctx.Done():
@@ -47,12 +60,15 @@ func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client
 	}
 }
 
+//Register registers a user's localhost connection to the proxy service
 func (s *Server) Register(stream client_proxy.Proxy_RegisterServer) error {
+	//retrieve data from metadata
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if !ok {
+		//if metadata not existent stop the proxy as it cannot be authenticated
 		return stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": ""}})
 	}
-
+	//get user id and check if its valid
 	userIDArr := md.Get("UserID")
 	if len(userIDArr) == 0 {
 		return stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": ""}})
@@ -60,9 +76,12 @@ func (s *Server) Register(stream client_proxy.Proxy_RegisterServer) error {
 
 	userID := userIDArr[0]
 
-	client := RegisterNewClient(stream)
+	//instantiate client
+	c := registerNewClient(stream)
 
-	s.clients[userID] = client
+	//add client to available clients in the server
+	s.clients[userID] = c
 
-	return client.Process(stream.Context())
+	//start processing requests/responses
+	return c.process(stream.Context())
 }
