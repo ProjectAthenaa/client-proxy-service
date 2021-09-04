@@ -82,6 +82,9 @@ func (s *Server) Register(stream client_proxy.Proxy_RegisterServer) error {
 	//add client to available clients in the server
 	s.clients[userID] = c
 
+	//delete the client from clients after it's done processing
+	defer delete(s.clients, userID)
+
 	//start processing requests/responses
 	return c.process(stream.Context())
 }
