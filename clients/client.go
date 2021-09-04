@@ -39,15 +39,20 @@ func (c *Client) Process(ctx context.Context) error {
 	}()
 
 	for {
-		msg, err := c.Recv()
-		if err != nil {
-			log.Error("err reciving req")
-			return err
-		}
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			msg, err := c.Recv()
+			if err != nil {
+				log.Error("err reciving req")
+				return err
+			}
 
-		if respChan, ok := c.responses[msg.TaskID]; ok {
-			respChan <- msg
-			delete(c.responses, msg.TaskID)
+			if respChan, ok := c.responses[msg.TaskID]; ok {
+				respChan <- msg
+				delete(c.responses, msg.TaskID)
+			}
 		}
 	}
 }
