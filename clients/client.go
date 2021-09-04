@@ -22,10 +22,18 @@ type Client struct {
 
 func (c *Client) Process(ctx context.Context) error {
 	go func() {
-		for req := range c.requests {
-			if err := c.Send(req); err != nil {
-				log.Error("err sending req ", err)
-				continue
+		var req *client_proxy.Request
+		for {
+			select {
+			case req = <-c.requests:
+				if err := c.Send(req); err != nil {
+					log.Error("err sending req ", err)
+					continue
+				}
+			case <-ctx.Done():
+				return
+			default:
+				break
 			}
 		}
 	}()
@@ -44,7 +52,7 @@ func (c *Client) Process(ctx context.Context) error {
 	}
 }
 
-func (c *Client) doRequest(req *client_proxy.Request) <- chan *client_proxy.Response {
+func (c *Client) doRequest(req *client_proxy.Request) <-chan *client_proxy.Response {
 	var respChan = make(chan *client_proxy.Response)
 	c.responses[req.TaskID] = respChan
 	c.requests <- req
