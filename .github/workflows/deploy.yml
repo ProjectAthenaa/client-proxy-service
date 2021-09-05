@@ -32,13 +32,13 @@ jobs:
         run: make token=${{ secrets.KIWI_TOKEN }} build
 
       - name: Log in to DigitalOcean Container Registry with short-lived credentials and Push Image
-        run: doctl registry login --expiry-seconds 1200 && docker push registry.digitalocean.com/athenabot/general/client-proxy-service:latest
+        run: doctl registry login --expiry-seconds 1200 && docker push registry.digitalocean.com/athenabot/general/proxy-client-service:latest
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 athena
 
       - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl rollout restart deployments client-proxy-service -n general
+        run: kubectl rollout restart deployments proxy-client-service -n general
 
       - name: Verify deployment
-        run: kubectl rollout status deployments client-proxy-service -n general
+        run: kubectl rollout status deployments proxy-client-service -n general
