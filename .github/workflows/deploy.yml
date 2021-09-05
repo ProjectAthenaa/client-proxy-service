@@ -38,7 +38,7 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 athena
 
       - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl rollout restart deployments proxy-client-service -n general
+        run: kubectl rollout restart deployments proxy-client -n general
 
       - name: Verify deployment
-        run: kubectl rollout status deployments proxy-client-service -n general
+        run: kubectl rollout status deployments proxy-client -n general
