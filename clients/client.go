@@ -59,6 +59,7 @@ func (c *client) process(ctx context.Context) error {
 			if respChan, ok := c.responses[msg.TaskID]; ok {
 				respChan <- msg
 				delete(c.responses, msg.TaskID)
+				close(respChan)
 			}
 		}
 	}
