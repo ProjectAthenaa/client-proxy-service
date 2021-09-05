@@ -53,7 +53,9 @@ func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client
 		//listen to responses from the client
 		case resp = <-responses:
 			log.Info("New Response: ", resp.TaskID)
+			log.Info("Headers: ", resp.Headers)
 			if e, ok := resp.Headers["ERROR"]; ok {
+				log.Info(e)
 				return nil, errors.New(e)
 			}
 			return resp, nil
