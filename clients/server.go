@@ -51,6 +51,9 @@ func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client
 		select {
 		//listen to responses from the client
 		case resp = <-responses:
+			if e, ok := resp.Headers["ERROR"]; ok {
+				return nil, errors.New(e)
+			}
 			return resp, nil
 		case <-ctx.Done():
 			return nil, errors.New("timeout")
@@ -66,13 +69,15 @@ func (s *Server) Register(stream client_proxy.Proxy_RegisterServer) error {
 	md, ok := metadata.FromIncomingContext(stream.Context())
 	if !ok {
 		//if metadata not existent stop the proxy as it cannot be authenticated
-		return stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": ""}})
+		return stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": "1"}})
 	}
 	//get user id and check if its valid
 	userIDArr := md.Get("UserID")
 	if len(userIDArr) == 0 {
-		return stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": ""}})
+		return stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": "1"}})
 	}
+
+	_ = stream.Send(&client_proxy.Request{Headers: map[string]string{"STOP": "0"}})
 
 	userID := userIDArr[0]
 

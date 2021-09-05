@@ -4,6 +4,7 @@ import (
 	"context"
 	client_proxy "github.com/ProjectAthenaa/sonic-core/protos/clientProxy"
 	"github.com/prometheus/common/log"
+	"strings"
 )
 
 //registerNewClient creates a new client and returns a pointer to it
@@ -48,7 +49,10 @@ func (c *client) process(ctx context.Context) error {
 		default:
 			msg, err := c.Recv()
 			if err != nil {
-				log.Error("err receiving req")
+				if strings.Contains(err.Error(), "context canceled") {
+					continue
+				}
+				log.Error("err receiving req", err.Error())
 				return err
 			}
 
