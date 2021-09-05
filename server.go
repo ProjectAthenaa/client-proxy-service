@@ -2,10 +2,9 @@ package main
 
 import (
 	"client-proxy-service/clients"
-	"fmt"
 	client_proxy "github.com/ProjectAthenaa/sonic-core/protos/clientProxy"
+	"github.com/prometheus/common/log"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"os"
 )
@@ -25,7 +24,7 @@ func main() {
 	server := grpc.NewServer()
 
 	client_proxy.RegisterProxyServer(server, clients.NewServer())
-	fmt.Println("Started proxy on localhost:8080")
+	log.Info("Started proxy on localhost:8080")
 	if err = server.Serve(lis); err != nil {
 		log.Fatalln(err)
 	}

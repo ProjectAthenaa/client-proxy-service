@@ -5,6 +5,7 @@ import (
 	"errors"
 	client_proxy "github.com/ProjectAthenaa/sonic-core/protos/clientProxy"
 	"github.com/google/uuid"
+	"github.com/prometheus/common/log"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -35,7 +36,7 @@ func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client
 
 	//create unique task id to match request with response
 	request.TaskID = uuid.NewString() + request.URL
-
+	log.Info("New Request: ", request.TaskID)
 	//check if client is connected
 	_, ok = s.clients[userID]
 	if !ok {
@@ -51,6 +52,7 @@ func (s *Server) Do(ctx context.Context, request *client_proxy.Request) (*client
 		select {
 		//listen to responses from the client
 		case resp = <-responses:
+			log.Info("New Response: ", resp.TaskID)
 			if e, ok := resp.Headers["ERROR"]; ok {
 				return nil, errors.New(e)
 			}
